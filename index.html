@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<title>Time Left</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body {
+    font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    height: 100%;
+  }
+  #chartWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  #chart {
+    /*border: 1px solid red;*/
+  }
+  .help {
+    color: #fff;
+    font-size: 2em;
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    animation-duration: 30s;
+    animation-name: fade;
+  }
+  @keyframes fade {
+    from {
+      color: #ccc;
+    }
+    to {
+      color: #fff;
+    }
+  }
+</style>
+<body>
+  <div id="chartWrapper">
+    <canvas id="chart"></canvas>
+  </div>
+  <a href="./help.html" class="help">?</a>
+<script>
+  const wrapper = document.getElementById('chartWrapper');
+  const chart = document.getElementById('chart');
+  const c = chart.getContext("2d");
+  const canvasRatio = 1.25;
+  const params = new URL(window.location).searchParams;
+  const state = {
+    dayRatio: null,
+    initialDayRatio: null,
+    lifeRatio: null,
+    size: null,
+  }
+  throttle("resize", "optimizedResize");
+  window.addEventListener("optimizedResize", () => {
+    setCanvasSize();
+    draw();
+  });
+  setInterval(() => {
+    setDayRatio();
+    draw();
+  }, 1000);
+  setCanvasSize();
+  setInitialDayRatio();
+  setDayRatio();
+  setLifeRatio();
+  draw();
+  function setCanvasSize() {
+    const maxSize = Math.min(
+      window.innerHeight,
+      window.innerWidth * canvasRatio
+    );
+    const height = maxSize - 20;
+    const width = div(height, canvasRatio);
+    chart.width = width * 2;
+    chart.height = height * 2;
+    chart.style.width = width + "px";
+    chart.style.height = height + "px";
+    state.size = width * 2;
+  }
+  function setInitialDayRatio () {
+    state.initialDayRatio = computeDayRatio();
+  }
+  function setDayRatio () {
+    state.dayRatio = computeDayRatio();
+  }
+  function computeDayRatio() {
+    const startOfDay = dayTimeParam('sunrise', '6:40');
+    const endOfDay = dayTimeParam('sunset', '19:15');
+    const dayRange = endOfDay - startOfDay;
+    const now = new Date();
+    const timeOfDay =
+      now.getHours() +
+      now.getMinutes() / 60 +
+      now.getSeconds() / 3600;
+    const boundedTimeOfDay = bound(timeOfDay - startOfDay, 0, dayRange);
+    return boundedTimeOfDay === 0
+      ? 1
+      : boundedTimeOfDay / dayRange;
+  }
+  function dayTimeParam(name, defaultValue) {
+    return convertDayTimeToHours(param(name, defaultValue), name);
+  }
+  function convertDayTimeToHours(time, name) {
+    const [h, m] = time.split(':');
+    if (h == null || isNaN(h) || m == null || isNaN(m)) {
+      error(name);
+    }
+    return Number(h) + Number(m) / 60;
+  }
+  function setLifeRatio () {
+    const startAge = numberParam('startAge', 10);
+    const birthday = dateParam('birthday', '1989-07-17');
+    const endAge = numberParam('endAge', 80);
+    const ageRange = endAge - startAge;
+    const now = new Date();
+    const yearInMS = 365 * 24 * 3600 * 1000;
+    const age = (now - birthday) / yearInMS;
+    const boundedAge = bound(age - startAge, 0, ageRange)
+    const lifeRatio = boundedAge / ageRange;
+    state.lifeRatio = lifeRatio;
+  }
+  function dateParam(name, defaultValue) {
+    const date = new Date(param(name, defaultValue));
+    if (isNaN(date)) {
+      error(name);
+    }
+    return date;
+  }
+  function numberParam(name, defaultValue) {
+    const value = param(name, defaultValue);
+    if (isNaN(value)) {
+      error(name);
+    }
+    return value;
+  }
+  function error(name) {
+    wrapper.innerHTML =
+      '<div>' +
+      '<p>URL param <code>' +
+      name +
+      '</code> was given in an incorrect format.</p>' +
+      'See <a href="./help.html">instructions</a>.' +
+      '</div>';
+  }
+  function param(name, defaultValue) {
+    return or(params.get(name), defaultValue);
+  }
+  function or(x, y) {
+    return x != null ? x : y;
+  }
+  function bound(x, min, max) {
+    return Math.min(max, Math.max(min, x));
+  }
+  function draw() {
+    const {dayRatio, initialDayRatio, lifeRatio, size} = state;
+    const initial = initialDayRatio;
+    const center = div(size, 2);
+    const daySize = div(mul(size, 0.9), 2);
+    const sliver = 0.002;
+    const colorGone = "#ff5a5a";
+    const colorLeft = "#2ad563";
+    c.clearRect(0, 0, size, size);
+    pieSlice(center, center, daySize, 0, dayRatio, colorGone);
+    pieSlice(center, center, daySize, dayRatio, 1, colorLeft);
+    pieSlice(center, center, daySize, initial - sliver, initial, "black");
+    pieSlice(center, center, daySize, -sliver / 2, sliver / 2, "white");
+    const bottom = size * (1 + (canvasRatio - 1) / 2);
+    const barLength = mul(size, 0.9);
+    const barHeight = size * (canvasRatio - 1) / 4;
+    barSlice(center, bottom, barLength, barHeight, 0, lifeRatio, colorGone);
+    barSlice(center, bottom, barLength, barHeight, lifeRatio, 1, colorLeft);
+  }
+  function mul(x, y) {
+    return Math.floor(x * y);
+  }
+  function div(x, y) {
+    return Math.floor(x / y);
+  }
+  function pieSlice(centerX, centerY, radius, startAngle, endAngle, color) {
+    c.fillStyle = color;
+    c.beginPath();
+    c.moveTo(centerX,centerY);
+    c.arc(
+      centerX,
+      centerY,
+      radius,
+      toPieAngle(startAngle),
+      toPieAngle(endAngle)
+    );
+    c.closePath();
+    c.fill();
+  }
+  function barSlice(centerX, centerY, width, height, start, end, color) {
+    c.fillStyle = color;
+    c.fillRect(
+      Math.floor(centerX + (start - 0.5) * width),
+      Math.floor(centerY - height / 2),
+      Math.floor((end - start) * width + 1),
+      Math.floor(height),
+    );
+  }
+  function toPieAngle(angle) {
+    return (angle - 0.25) * 2 * Math.PI;
+  }
+  function throttle(type, newType) {
+    let running = false;
+    const throttler = () => {
+      if (running) {
+        return;
+      }
+      running = true;
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent(newType));
+        running = false;
+      });
+    };
+    window.addEventListener(type, throttler);
+  };
+</script>
+</body>
+</html>

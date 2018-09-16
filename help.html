@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<title>Time Left</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    margin: 20px;
+    font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  }
+</style>
+<body>
+  <h1>Time Left</h1>
+  <p>
+    On the previous page you can see how much waking time you have left today and for the rest of your life.
+  </p>
+  <p>
+    Go <a href="./index.html">back</a>.
+  </p>
+  <h2>Configuration</h2>
+  <p>
+    You can configure the page using URL params:
+  </p>
+  <ul>
+    <li><code>sunrise</code> – the start time of your day, in the format <code>h:m</code>, such as <code>6:40</code></li>
+    <li><code>sunset</code> – the ending time of your day, in the format <code>h:m</code>, such as <code>19:15</code></li>
+    <li><code>startAge</code> – the starting age from which you want to count, a number such as <code>10</code></li>
+    <li><code>birthDay</code> – your birth day in the format <code>y-m-d</code>, such as <code>1989-7-17</code></li>
+    <li><code>endAge</code> – the life expectancy age, a number such as <code>80</code></li>
+  </ul>
+  <h3>Examples</h3>
+  Born in 1983, with life expectancy of 82 years, wakes up at 9am and goes to bed at midnight:<br />
+  <a href="./index.html?birthday=1983-07-04&sunrise=9:00&sunset=23:59&endAge=82&startAge=6" style="white-space: nowrap">?birthday=1983-07-04&sunrise=9:00&sunset=23:59&endAge=82&startAge=6</a>
+</body>
+</html>
